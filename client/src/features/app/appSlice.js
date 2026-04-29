@@ -19,6 +19,11 @@ const initialState = {
   addresses: [],
   selectedAddress: null,
   currency: import.meta.env.VITE_CURRENCY,
+  loading: {
+    user: true,
+    products: true,
+    addresses: false,
+  },
 };
 
 const appSlice = createSlice({
@@ -65,17 +70,31 @@ const appSlice = createSlice({
 
   extraReducers: (builder) => {
     builder
+      .addCase(fetchUser.pending, (state) => {
+        state.loading.user = true;
+      })
       .addCase(fetchUser.fulfilled, (state, action) => {
         state.user = action.payload.user;
         state.cartItems = action.payload.cartItems;
+        state.loading.user = false;
+      })
+      .addCase(fetchUser.rejected, (state) => {
+        state.loading.user = false;
       })
 
       .addCase(fetchSeller.fulfilled, (state, action) => {
         state.isSeller = action.payload;
       })
 
+      .addCase(fetchProducts.pending, (state) => {
+        state.loading.products = true;
+      })
       .addCase(fetchProducts.fulfilled, (state, action) => {
         state.products = action.payload;
+        state.loading.products = false;
+      })
+      .addCase(fetchProducts.rejected, (state) => {
+        state.loading.products = false;
       })
 
       .addCase(loginUser.fulfilled, (state, action) => {
@@ -97,9 +116,16 @@ const appSlice = createSlice({
         state.showUserLogin = false;
       })
 
+      .addCase(fetchAddresses.pending, (state) => {
+        state.loading.addresses = true;
+      })
       .addCase(fetchAddresses.fulfilled, (state, action) => {
         state.addresses = action.payload;
         state.selectedAddress = action.payload[0] || null;
+        state.loading.addresses = false;
+      })
+      .addCase(fetchAddresses.rejected, (state) => {
+        state.loading.addresses = false;
       });
   },
 });

@@ -39,6 +39,7 @@ export default function Cart() {
 
   const addresses = useSelector(state => state.app.addresses);
   const selectedAddress = useSelector(state => state.app.selectedAddress);
+  const loading = useSelector(state => state.app.loading);
 
   const [addressAnchor, setAddressAnchor] = useState(null);
   const [paymentOption, setPaymentOption] = useState("COD");
@@ -47,7 +48,25 @@ export default function Cart() {
     dispatch(fetchAddresses());
   }, [dispatch]);
 
-  if (!cartArray.length) return null;
+  if (loading.user || loading.products) {
+    return (
+      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "50vh" }}>
+        <Typography variant="h6">Loading your cart...</Typography>
+      </Box>
+    );
+  }
+
+  if (!cartArray.length) {
+    return (
+      <Box sx={{ display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", minHeight: "50vh" }}>
+        <Typography variant="h5" gutterBottom>Your cart is empty</Typography>
+        <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+          Add some products to get started!
+        </Typography>
+        <Button variant="contained" onClick={() => navigate("/products")}>Browse Products</Button>
+      </Box>
+    );
+  }
 
   const taxRate = 0.02;
   const shippingFee = 0;
@@ -55,80 +74,88 @@ export default function Cart() {
   const totalAmount = Number((cartAmount + shippingFee + taxAmount).toFixed(2));
 
   return (
-    <Grid container spacing={4} sx={{ mt: 8, alignItems: "flex-start", px: { xs: 2, md: 6 } }}>
-      {/* Cart Items */}
-      <Grid item xs={12} md={8.5} lg={9}>
-        <Typography variant="h4" fontWeight={700} mb={2}>
+    <Grid container spacing={4} sx={{ mt: 8, px: { xs: 2, md: 6 } }}>
+      <Grid item xs={12} md={8} lg={9}>
+        <Typography variant="h4" fontWeight={700} mb={1}>
           Shopping Cart <Typography component="span" color="primary.main">{cartCount} Items</Typography>
         </Typography>
 
-        <Paper sx={{ p: 2, border: "1px solid #e0e0e0" }}>
-          <Grid container sx={{ pb: 2, borderBottom: "1px solid #e0e0e0", columnGap: 50 }}>
-            <Grid item xs={6} sx={{ pr: 1 }}><Typography fontWeight={600} color="text.secondary">Product Details</Typography></Grid>
-            <Grid item xs={3} sx={{ px: 1 }}><Typography fontWeight={600} color="text.secondary" textAlign="center">Subtotal</Typography></Grid>
-            <Grid item xs={3} sx={{ pl: 1 }}><Typography fontWeight={600} color="text.secondary" textAlign="center">Action</Typography></Grid>
-          </Grid>
+        <Paper sx={{ p: { xs: 2, md: 3 }, border: "1px solid #e8eef0", borderRadius: 3, boxShadow: "0px 8px 24px rgba(15, 23, 42, 0.08)" }}>
+          <Box sx={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: 30, pb: 2, mb: 2, borderBottom: "1px solid #e6ecf0" }}>
+            <Typography variant="subtitle2" color="text.secondary" fontWeight={700} sx={{ minWidth: 220 }}>Product Details</Typography>
+            <Typography variant="subtitle2" color="text.secondary" fontWeight={700} sx={{ flex: "0 0 120px", textAlign: "center" }}>Subtotal</Typography>
+            <Typography variant="subtitle2" color="text.secondary" fontWeight={700} sx={{ flex: "0 0 80px", textAlign: "center" }}>Action</Typography>
+          </Box>
 
           {cartArray.map(product => (
-            <Grid key={product._id} container alignItems="center" sx={{ py: 2, borderBottom: "1px solid #f2f2f2", columnGap: 40 }}>
-              <Grid item xs={6} sx={{ pr: 1 }}>
+            <Box key={product._id} sx={{ display: "flex", justifyContent: "space-between", gap: 30, py: 2, borderBottom: "1px solid #f2f5f6" }}>
+              <Box sx={{ minWidth: 220 }}>
                 <Box sx={{ display: "flex", gap: 2, alignItems: "flex-start" }}>
                   <Box
                     component="img"
                     src={product.image?.[0] || assets.product_placeholder}
                     alt={product.name}
-                    sx={{ width: 90, height: 90, border: "1px solid #ddd", borderRadius: 1, objectFit: "cover", cursor: "pointer" }}
+                    sx={{ width: 96, height: 96, border: "1px solid #ebf0f2", borderRadius: 2, objectFit: "cover", cursor: "pointer" }}
                     onClick={() => navigate(`/products/${product.category.toLowerCase()}/${product._id}`)}
                   />
-
-                  <Box>
-                    <Typography fontWeight={600} fontSize="1rem">{product.name}</Typography>
+                  <Box sx={{ minWidth: 0 }}>
+                    <Typography variant="subtitle1" fontWeight={700}>{product.name}</Typography>
                     <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>Weight: N/A</Typography>
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 1 }}>
-                      <Typography variant="body2">Qty:</Typography>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 2, mt: 1.5, flexWrap: "wrap" }}>
+                      <Typography variant="body2" color="text.secondary">Qty:</Typography>
                       <Select
                         size="small"
                         value={product.quantity}
                         onChange={(e) => dispatch(updateCartItemLocal({ itemId: product._id, quantity: Number(e.target.value) }))}
+                        sx={{ minWidth: 90 }}
                       >
-                        {[...Array(10)].map((_, i) => (<MenuItem key={i} value={i + 1}>{i + 1}</MenuItem>))}
+                        {[...Array(10)].map((_, idx) => (
+                          <MenuItem key={idx} value={idx + 1}>{idx + 1}</MenuItem>
+                        ))}
                       </Select>
                     </Box>
                   </Box>
                 </Box>
-              </Grid>
+              </Box>
 
-              <Grid item xs={3} textAlign="center" sx={{ px: 1 }}>
-                <Typography fontWeight={600}>{currency}{(product.offerPrice * product.quantity).toFixed(2)}</Typography>
-              </Grid>
+              <Box sx={{ flex: "0 0 120px", textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <Typography fontWeight={700}>{currency}{(product.offerPrice * product.quantity).toFixed(2)}</Typography>
+              </Box>
 
-              <Grid item xs={3} textAlign="center" sx={{ pl: 1 }}>
+              <Box sx={{ flex: "0 0 80px", textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <Button onClick={() => dispatch(removeFromCartLocal(product._id))} sx={{ minWidth: 0, p: 0.5 }}>
                   <img src={assets.remove_icon} width={22} alt="remove" />
                 </Button>
-              </Grid>
-            </Grid>
+              </Box>
+            </Box>
           ))}
         </Paper>
 
-        <Button sx={{ mt: 3 }} onClick={() => navigate("/products")}>← Continue Shopping</Button>
+        <Button variant="text" sx={{ mt: 3, textTransform: "none" }} onClick={() => navigate("/products")}>← Continue Shopping</Button>
       </Grid>
 
-      {/* Order Summary */}
-      <Grid item xs={12} md={3.5} lg={3} sx={{ position: { md: "sticky" }, top: 100, ml: "auto", mr: { xs: 0, md: 6 } }}>
-        <Paper sx={{ p: 3, backgroundColor: "rgba(244,248,250,0.9)" }}>
+      <Grid item xs={12} md={4} lg={3}>
+        <Paper sx={{ p: 3, borderRadius: 3, border: "1px solid #e8eef0", boxShadow: "0px 8px 24px rgba(15, 23, 42, 0.08)", position: { md: "sticky" }, top: 100 }}>
           <Typography variant="h6" fontWeight={700} mb={2}>Order Summary</Typography>
 
-          <Typography fontWeight={600} letterSpacing={0.5}>Delivery Address</Typography>
+          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
+            <Typography variant="subtitle2" color="text.secondary" sx={{ letterSpacing: 1, fontWeight: 700 }}>Delivery Address</Typography>
+            {selectedAddress ? (
+              <Button size="small" onClick={e => setAddressAnchor(e.currentTarget)} sx={{ textTransform: "none", p: 0, minWidth: 0 }}>
+                Change
+              </Button>
+            ) : (
+              <Button size="small" onClick={() => navigate("/add-address")} sx={{ textTransform: "none", p: 0, minWidth: 0 }}>
+                Add Address
+              </Button>
+            )}
+          </Box>
 
           {selectedAddress ? (
-            <Box sx={{ mt: 1, display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-              <Typography variant="body2" color="text.secondary">{selectedAddress.street}, {selectedAddress.city}, {selectedAddress.state || ""}</Typography>
-              <Button size="small" onClick={e => setAddressAnchor(e.currentTarget)}>Change</Button>
-            </Box>
-          ) : (
-            <Button size="small" onClick={() => navigate("/add-address")} sx={{ mt: 1 }}>Add Address</Button>
-          )}
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              {selectedAddress.street}, {selectedAddress.city}, {selectedAddress.state || ""}
+            </Typography>
+          ) : null}
 
           <Menu anchorEl={addressAnchor} open={Boolean(addressAnchor)} onClose={() => setAddressAnchor(null)}>
             {addresses.map(addr => (
@@ -139,7 +166,7 @@ export default function Cart() {
             <MenuItem onClick={() => navigate("/add-address")}>➕ Add Address</MenuItem>
           </Menu>
 
-          <Typography fontWeight={600} letterSpacing={0.5} sx={{ mt: 3 }}>Payment Method</Typography>
+          <Typography variant="overline" color="text.secondary" sx={{ letterSpacing: 1, mt: 3 }}>Payment Method</Typography>
           <Select fullWidth size="small" value={paymentOption} onChange={e => setPaymentOption(e.target.value)} sx={{ mt: 1 }}>
             <MenuItem value="COD">Cash On Delivery</MenuItem>
             <MenuItem value="Card">Card</MenuItem>
@@ -149,25 +176,25 @@ export default function Cart() {
 
           <Box sx={{ display: "flex", justifyContent: "space-between", py: 0.5 }}>
             <Typography variant="body2" color="text.secondary">Price</Typography>
-            <Typography fontWeight={600}>{currency}{cartAmount.toFixed(2)}</Typography>
+            <Typography fontWeight={700}>{currency}{cartAmount.toFixed(2)}</Typography>
           </Box>
           <Box sx={{ display: "flex", justifyContent: "space-between", py: 0.5 }}>
             <Typography variant="body2" color="text.secondary">Shipping Fee</Typography>
-            <Typography fontWeight={600}>Free</Typography>
+            <Typography fontWeight={700}>Free</Typography>
           </Box>
           <Box sx={{ display: "flex", justifyContent: "space-between", py: 0.5 }}>
             <Typography variant="body2" color="text.secondary">Tax (2%)</Typography>
-            <Typography fontWeight={600}>{currency}{taxAmount.toFixed(2)}</Typography>
+            <Typography fontWeight={700}>{currency}{taxAmount.toFixed(2)}</Typography>
           </Box>
 
           <Divider sx={{ my: 2 }} />
 
           <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
-            <Typography variant="h6" fontWeight={700}>Total Amount:</Typography>
-            <Typography variant="h6" fontWeight={700}>{currency}{totalAmount.toFixed(2)}</Typography>
+            <Typography variant="subtitle1" fontWeight={700}>Total Amount:</Typography>
+            <Typography variant="subtitle1" fontWeight={700}>{currency}{totalAmount.toFixed(2)}</Typography>
           </Box>
 
-          <Button fullWidth variant="contained" size="large">Place Order</Button>
+          <Button fullWidth variant="contained" size="large" sx={{ textTransform: "none" }}>Place Order</Button>
         </Paper>
       </Grid>
     </Grid>
